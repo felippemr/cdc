@@ -35,3 +35,5 @@ class ConnectionSettings:
 class ChangeData:
     transaction_id: str
     change: Dict[str, Any]
+    next_lsn: str
+    timestamp: str

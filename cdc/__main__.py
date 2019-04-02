@@ -8,13 +8,12 @@ from cdc.slot import SlotReader
 from cdc.stream import StreamWriter
 
 
-def main(
+def _main(
     connection_settings: ConnectionSettings,
     stream_name: str,
     recreate_slot: bool,
     reply_from_lsn: Optional[int] = None,
 ):
-
     logger.info('Starting CDC!')
     writer = StreamWriter(stream_name)
 
@@ -24,10 +23,10 @@ def main(
             reader.create_slot()
 
         formatter = Formatter()
-        consume = Consumer(formatter, writer)
+        consumer = Consumer(formatter, writer)
 
         # Blocking. Responds to Control-C.
-        reader.process_replication_stream(consume, reply_from_lsn)
+        reader.process_replication_stream(consumer, reply_from_lsn)
 
 
 if __name__ == '__main__':
@@ -36,9 +35,9 @@ if __name__ == '__main__':
         host='localhost',
         port='5432',
         user='rep',
-        slot_name='carta_cdc_2',
+        slot_name='carta_cdc_1',
     )
-    main(
+    _main(
         connection_settings=conn_settings,
         stream_name='carta_cdc_1',
         recreate_slot=True,

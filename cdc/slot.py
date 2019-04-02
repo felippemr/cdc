@@ -1,3 +1,5 @@
+from typing import Optional, Dict
+
 import psycopg2
 import psycopg2.extras
 import psycopg2.extensions
@@ -63,7 +65,7 @@ class SlotReader:
 
     def delete_slot(self):
         slot_name = self._connection_settings.slot_name
-        logger.info('Deleting slot {slot_name}')
+        logger.info(f'Deleting slot {slot_name}')
         try:
             self._repl_cursor.drop_replication_slot(slot_name)
         except psycopg2.ProgrammingError as p:
@@ -74,7 +76,7 @@ class SlotReader:
             else:
                 logger.info(f'Slot {slot_name} was not found.')
 
-    def process_replication_stream(self, consume, reply_from_lsn=None):
+    def process_replication_stream(self, consumer, reply_from_lsn: Optional[int] = None):
         slot_name = self._connection_settings.slot_name
 
         self._log_greetings(slot_name, reply_from_lsn)
@@ -83,24 +85,25 @@ class SlotReader:
         if reply_from_lsn:
             self._repl_cursor.send_feedback(apply_lsn=reply_from_lsn)
 
-        self._repl_cursor.consume_stream(consume)
+        self._repl_cursor.consume_stream(consumer)
 
     @staticmethod
     def _log_greetings(slot_name, reply_from_lsn):
         msg = f'Starting the consumption of slot "{slot_name}"'
         if reply_from_lsn:
-            msg += f" from {reply_from_lsn}"
+            msg += f" from LSN {reply_from_lsn}"
 
         logger.info(msg)
 
     @property
-    def _replication_options(self):
+    def _replication_options(self) -> Dict[str, int]:
         options = None
         if self.output_plugin == 'wal2json':
             options = {
                 'include-xids': 1,
                 'include-lsn': 1,
                 'include-timestamp': 1,
+                'write-in-chunks': 1,
                 'include-schemas': 0,
                 'include-types': 0,
                 'include-typmod': 0,
