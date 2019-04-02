@@ -76,7 +76,7 @@ class SlotReader:
             else:
                 logger.info(f'Slot {slot_name} was not found.')
 
-    def process_replication_stream(self, consumer, reply_from_lsn: Optional[int] = None):
+    def process_replication_stream(self, enqueuer, reply_from_lsn: Optional[int] = None):
         slot_name = self._connection_settings.slot_name
 
         self._log_greetings(slot_name, reply_from_lsn)
@@ -85,7 +85,7 @@ class SlotReader:
         if reply_from_lsn:
             self._repl_cursor.send_feedback(apply_lsn=reply_from_lsn)
 
-        self._repl_cursor.consume_stream(consumer)
+        self._repl_cursor.consume_stream(enqueuer)
 
     @staticmethod
     def _log_greetings(slot_name, reply_from_lsn):
@@ -103,7 +103,7 @@ class SlotReader:
                 'include-xids': 1,
                 'include-lsn': 1,
                 'include-timestamp': 1,
-                'write-in-chunks': 1,
+                'write-in-chunks': 0,
                 'include-schemas': 0,
                 'include-types': 0,
                 'include-typmod': 0,

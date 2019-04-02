@@ -1,11 +1,11 @@
 from typing import Optional
+from queue import Queue
 
 from cdc.consumer import Consumer
 from cdc.data_types import ConnectionSettings
-from cdc.formatter import Formatter
+from cdc.enqueuer import Enqueuer
 from cdc.log import logger
 from cdc.slot import SlotReader
-from cdc.stream import StreamWriter
 
 
 def _main(
@@ -14,19 +14,19 @@ def _main(
     recreate_slot: bool,
     reply_from_lsn: Optional[int] = None,
 ):
+    job_queue = Queue()
     logger.info('Starting CDC!')
-    writer = StreamWriter(stream_name)
+
+    consumer = Consumer.bootstrap(stream_name, job_queue)
+    consumer.run()
 
     with SlotReader(connection_settings) as reader:
         if recreate_slot:
             reader.delete_slot()
             reader.create_slot()
 
-        formatter = Formatter()
-        consumer = Consumer(formatter, writer)
-
-        # Blocking. Responds to Control-C.
-        reader.process_replication_stream(consumer, reply_from_lsn)
+        enqueuer = Enqueuer(job_queue)
+        reader.process_replication_stream(enqueuer, reply_from_lsn)
 
 
 if __name__ == '__main__':
@@ -40,6 +40,6 @@ if __name__ == '__main__':
     _main(
         connection_settings=conn_settings,
         stream_name='carta_cdc_1',
-        recreate_slot=True,
+        recreate_slot=False,
         reply_from_lsn=None,
     )
