@@ -1,5 +1,4 @@
-from queue import Queue
-from threading import Thread
+from multiprocessing import Process, Queue
 from typing import ClassVar
 
 from cdc.log import logger
@@ -14,7 +13,7 @@ class Consumer:
         job_queue: Queue,
         serializer_class: ClassVar[Serializer],
         writer_class: ClassVar[StreamWriter],
-        threading_class: ClassVar[Thread] = Thread
+        threading_class: ClassVar[Process] = Process
     ):
         self._stream_name = stream_name
         self._job_queue = job_queue
@@ -29,15 +28,16 @@ class Consumer:
         job_queue: Queue,
         serializer_class: ClassVar[Serializer] = Serializer,
         writer_class: ClassVar[StreamWriter] = StreamWriter,
-        threading_class: ClassVar[Thread] = Thread
+        threading_class: ClassVar[Process] = Process
     ):
         return cls(
             stream_name, job_queue, serializer_class, writer_class, threading_class
         )
 
     def run(self):
-        thread = self._threading_class(target=self._work, daemon=True)
-        thread.start()
+        for _ in range(2):
+            thread = self._threading_class(target=self._work, daemon=True)
+            thread.start()
 
     def _work(self):
         while True:
@@ -47,7 +47,7 @@ class Consumer:
             change_data = self._job_queue.get()
 
             self._consume_changes(change_data, serializer, writer)
-            self._flush_lsn(change_data)
+            # self._flush_lsn(change_data)
 
     @staticmethod
     def _consume_changes(item, serializer, writer):

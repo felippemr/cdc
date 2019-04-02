@@ -1,5 +1,5 @@
 from typing import Optional
-from queue import Queue
+from multiprocessing import Queue
 
 from cdc.consumer import Consumer
 from cdc.data_types import ConnectionSettings

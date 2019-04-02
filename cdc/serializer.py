@@ -16,12 +16,13 @@ class Serializer:
 
     @staticmethod
     def _process_wal2json_change(change) -> Generator[ChangeData, None, None]:
-        change_dictionary = rapidjson.loads(change.payload)
+        payload, lsn = change
+        change_dictionary = rapidjson.loads(payload)
 
         changes = change_dictionary['change']
         timestamp = change_dictionary['timestamp']
         transaction_id = change_dictionary['xid']
-        lsn = change.data_start
+        lsn = lsn
 
         for chunk in (changes[i:i+CHUNK_SIZE] for i in range(0, len(changes), CHUNK_SIZE)):
             yield ChangeData(
